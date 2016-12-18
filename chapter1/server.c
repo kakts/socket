@@ -87,3 +87,35 @@ int server_socket(const char *portnm) {
   freeaddrinfo(res0);
   return (soc);
 }
+
+// accept loop
+// 並列処理を行っていないので、受け付けた後、1つのクライアントの送受信処理が終わるまで他の受付ができない。
+void accept_loop(int soc) {
+  char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
+  struct sockaddr_storage from;
+  int acc;
+  socklen_t len;
+
+  for (;;) {
+    len = (socklen_t) sizeof(from);
+    // waiting connection
+    // 1つも待ちがない状態だとaccept()実行でブロックする
+    if ((acc = accept(soc, (struct sockaddr *) &from, &len)) == -1) {
+      if (errno != EINTR) {
+        perror("accept");
+      }
+    } else {
+      (void) getnameinfo((struct sockaddr *) &from, len,
+                          hbuf, sizeof(hbuf),
+                          sbuf, sizeof(sbuf),
+                          NI_NUMERICHOST | NI_NUMERICSERV);
+      (void) fprintf(stderr, "accept:%s:%s\n", hbuf, sbuf);
+
+      // loop
+      send_recv_loop(acc);
+      // close
+      (void) close(acc);
+      acc = 0;
+    }
+  }
+}
