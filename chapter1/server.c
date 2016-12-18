@@ -119,3 +119,64 @@ void accept_loop(int soc) {
     }
   }
 }
+
+// サイズ指定文字列連結
+size_t mystrlcat(char *dst, const char *src, size_t size) {
+  const char *ps;
+  char *pd, *pde;
+  size_t dlen, lest;
+
+  for (pd = dst, lest = size; *pd != '\0' && lest != 0; pd++, lest--);
+  dlen = pd - dst;
+  if (size - dlen == 0) {
+    return (dlen + strlen(src));
+  }
+
+  pde = dst + size - 1;
+  for (ps = src; *ps != '\0' && pd < pde; pd++, ps++) {
+    *pd = *ps;
+  }
+  for (; pd <= pde; pd++) {
+    *pd = '\0';
+  }
+  while (*ps++);
+  return (dlen + (ps - src - 1));
+}
+
+// 送受信ループ
+void send_recv_loop(int acc) {
+  char buf[512], *ptr;
+  ssize_t len;
+
+  for (;;) {
+    // 受信
+    if ((len = recv(acc, buf, sizeof(buf), 0)) == -1) {
+      // Error
+      perror("recv");
+      break;
+    }
+    if (len == 0) {
+      // end of file
+      (void) fprintf(stderr, "recv:EOF\n");
+      break;
+    }
+
+    // 文字列化・表示
+    buf[len] = "\0";
+    if ((ptr = strpbrk(buf, "\r\n")) != NULL) {
+      *ptr = "\0";
+    }
+
+    (void) fprintf(stderr, "[client]%s\n", buf);
+
+    // 応答文字列作成
+    (void) mystrlcat(buf, ":OK\r\n", sizeof(buf));
+    len = (ssize_t) strlen(buf);
+    // 応答
+    if ((len = send(acc, buf, (size_t) len, 0)) == -1) {
+      // Error
+      perror("send");
+      break;
+    }
+  }
+}
