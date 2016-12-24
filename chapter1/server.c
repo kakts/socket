@@ -58,9 +58,9 @@ void send_recv_loop(int acc) {
     }
 
     // 文字列化・表示
-    buf[len] = "\0";
+    buf[len] = '\0';
     if ((ptr = strpbrk(buf, "\r\n")) != NULL) {
-      *ptr = "\0";
+      *ptr = '\0';
     }
 
     (void) fprintf(stderr, "[client]%s\n", buf);
@@ -79,7 +79,7 @@ void send_recv_loop(int acc) {
 
 // Ready for server_socket
 int server_socket(const char *portnm) {
-
+  fprintf(stderr, "server_socket");
   char nbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
   struct addrinfo hints, *res0;
   int soc, opt, errcode;
@@ -108,7 +108,8 @@ int server_socket(const char *portnm) {
   (void) fprintf(stderr, "port=%s\n", sbuf);
 
   // Create socket
-  if ((soc = socket(res0->ai_family, res0->ai_socktype, res0->ai_protocol)) == -1) {
+  soc = socket(res0->ai_family, res0->ai_socktype, res0->ai_protocol);
+  if (soc == -1) {
     perror("socket");
     freeaddrinfo(res0);
     return (-1);
@@ -158,20 +159,28 @@ void accept_loop(int soc) {
   int acc;
   socklen_t len;
 
+
   for (;;) {
     len = (socklen_t) sizeof(from);
+
     // waiting connection
     // 1つも待ちがない状態だとaccept()実行でブロックする
-    if ((acc = accept(soc, (struct sockaddr *) &from, &len)) == -1) {
+
+    // ここでsocが０になっている
+    acc = accept(soc, (struct sockaddr *) &from, &len);
+    (void) fprintf(stderr, "before0 %d %d", acc, soc);
+    if (acc == -1) {
+          (void) fprintf(stderr, "before1 %d \n", errno);
       if (errno != EINTR) {
         perror("accept");
       }
     } else {
+            (void) fprintf(stderr, "test1");
       (void) getnameinfo((struct sockaddr *) &from, len,
                           hbuf, sizeof(hbuf),
                           sbuf, sizeof(sbuf),
                           NI_NUMERICHOST | NI_NUMERICSERV);
-      (void) fprintf(stderr, "accept:%s:%s\n", hbuf, sbuf);
+      (void) fprintf(stderr, "acceptｎ:%s:%s\n", hbuf, sbuf);
 
       // loop
       (void) send_recv_loop(acc);
@@ -191,8 +200,8 @@ int main(int argc, char *argv[]) {
   }
 
   // Prepare for making server_socket
-  if ((soc == server_socket(argv[1])) == -1) {
-    (void) fprintf(stderr, "server_socket(%s):error\n", argv[1]);
+      (void) fprintf(stderr, "server aaaaaa\n");
+  if ((soc = server_socket(argv[1])) == -1) { (void) fprintf(stderr, "server_socket(%s):error\n", argv[1]);
     return (EX_UNAVAILABLE);
   }
   (void) fprintf(stderr, "ready for accept\n");
