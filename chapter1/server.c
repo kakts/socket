@@ -94,7 +94,7 @@ int server_socket(const char *portnm) {
   // Set the addrinfo
   // どのアドレスからでも受け付ける場合第1引数をNULLにする
   if ((errcode = getaddrinfo(NULL, portnm, &hints, &res0)) != 0) {
-    (void) fprintf(stderr, "getnameinfo():%s\n", gai_strerror(errcode));
+    (void) fprintf(stderr, "getaddrinfo():%s\n", gai_strerror(errcode));
     return (-1);
   }
   if ((errcode = getnameinfo(res0->ai_addr, res0->ai_addrlen,
